@@ -14,6 +14,7 @@ from sklearn.model_selection import train_test_split
 import argparse
 from bs4 import BeautifulSoup
 import cv2 as cv
+from xml.dom import minidom
 
 from tool import colorstr
 
@@ -22,10 +23,14 @@ seed = randint(2022, 2025)
 labels_name = {
     "白烟": "0",
     "灰烟": "0",
+    "黄烟": "0",
     "黑烟": "0",
     "火焰": "1",
     "黄焰": "1",
 }
+
+valid_list = ["黄焰", "黄烟"]
+print_list = []
 
 
 def get_opt():
@@ -142,7 +147,11 @@ class Xml2Yolo(object):
             # old_label
             old_label = old_name + ".xml"
             label = self.read_xml(origin_dir + "/labels/" + old_label)
+            # for ntl in label["object"]:
+            #     if ntl[0] in valid_list:
+            #         print_list.append(old_name)
             new_label_txt = self.produce_txt(label)
+
             # 是否删除旧图像、旧标注，当图片无标注信息时
             if not new_label_txt and self.opt.delete:
                 os.remove(origin_dir + f"images/{old_name}.jpg")
@@ -161,6 +170,163 @@ class Xml2Yolo(object):
     pass
 
 
+class Yolo2Xml(object):
+    """
+    Yolo数据格式转换为PascalVOC格式
+    yolo数据存放格式：
+    - 数据集
+        |- images
+        |- labels
+        |- classes.txt(可存放在labels里面)
+    """
+    class_names = {
+        "0": "烟",
+        "1": "火"
+    }
+
+    def __init__(self, root_dir):
+
+        self.root_dir = root_dir
+        pass
+
+    @classmethod
+    def add_txt_element(cls, xml_data, name, doc, root):
+        """
+        向根节点root添加name节点，并添加文本内容
+        Args:
+            xml_data: 要渲染的数据
+            name: 节点名
+            doc: Document
+            root: 要操作的根节点
+        Returns: Document
+        """
+        folder = doc.createElement(name)
+        folder_node = doc.createTextNode(xml_data[name])
+        folder.appendChild(folder_node)
+        root.appendChild(folder)
+        return doc
+
+    @classmethod
+    def produce_xml(cls, xml_data, out="xml_labels/test.xml"):
+        """
+        基于PascalVOC格式的字典数据生成xml数据，并保存
+        Args:
+            xml_data: PascalVOC格式的字典数据
+            out: 保存xml文件的路径
+        Returns: None
+        """
+        doc = minidom.Document()
+        root = doc.createElement("annotation")
+        doc.appendChild(root)
+        # 添加第一级标签
+        cls.add_txt_element(xml_data, "folder", doc, root)
+        cls.add_txt_element(xml_data, "filename", doc, root)
+        cls.add_txt_element(xml_data, "path", doc, root)
+        cls.add_txt_element(xml_data, "segmented", doc, root)
+        # 添加第二级公共标签
+        source = doc.createElement("source")
+        root.appendChild(source)
+        cls.add_txt_element(xml_data["source"], "database", doc, source)
+        size_node = doc.createElement("size")
+        root.appendChild(size_node)
+        cls.add_txt_element(xml_data["size"], "width", doc, size_node)
+        cls.add_txt_element(xml_data["size"], "height", doc, size_node)
+        cls.add_txt_element(xml_data["size"], "depth", doc, size_node)
+        # 添加object标签
+        for object_i in xml_data["object"]:
+            object_node = doc.createElement("object")
+            root.appendChild(object_node)
+            cls.add_txt_element(object_i, "name", doc, object_node)
+            cls.add_txt_element(object_i, "pose", doc, object_node)
+            cls.add_txt_element(object_i, "truncated", doc, object_node)
+            cls.add_txt_element(object_i, "difficult", doc, object_node)
+            bndbox = doc.createElement("bndbox")
+            object_node.appendChild(bndbox)
+            cls.add_txt_element(object_i["bndbox"], "xmin", doc, bndbox)
+            cls.add_txt_element(object_i["bndbox"], "ymin", doc, bndbox)
+            cls.add_txt_element(object_i["bndbox"], "xmax", doc, bndbox)
+            cls.add_txt_element(object_i["bndbox"], "ymax", doc, bndbox)
+            pass
+
+        with open(out, "w+", encoding="utf-8") as f:
+            doc.writexml(f, indent="\t", addindent="\t", newl="\n", encoding="utf-8")
+            f.close()
+        return
+
+    @classmethod
+    def read_txt(cls, root_dir, name, img_size):
+        """
+        读取yolo格式的标注文件，将其转换为PascalVOC格式的字典
+        Args:
+            root_dir: 待处理的数据集根目录
+            name: 待处理的文件名
+            img_size: 图片大小
+        Returns: 文件存在返回格式化的数据, 不存在返回False
+        """
+        try:
+            with open(root_dir + os.sep + "labels" +
+                      os.sep + name.split('.')[0] + ".txt", "r+", encoding="utf-8") as f:
+                data = f.readlines()
+                f.close()
+        except FileNotFoundError:
+            return False
+        read_result = {
+            "folder": "smokefire_industai",
+            "filename": f"{name}",
+            "path": f"{root_dir}/images/{name}",
+            "source": {
+                "database": "UnKnown"
+            },
+            "size": {
+                "width": str(img_size[0]),
+                "height": str(img_size[1]),
+                "depth": str(img_size[2])
+            },
+            "segmented": "0",
+            "object": []
+        }
+        for d in data:
+            class_id, x, y, w, h = d.split(" ")
+            h = h[:-1]
+            middle_object = {
+                "name": cls.class_names[class_id],
+                "pose": "Unspecified",
+                "truncated": "0",
+                "difficult": "0",
+                "bndbox": {
+                        "xmin": str(round((float(x) - 0.5 * float(w)) * img_size[0])),
+                        "ymin": str(round((float(y) - 0.5 * float(h)) * img_size[1])),
+                        "xmax": str(round((float(x) + 0.5 * float(w)) * img_size[0])),
+                        "ymax": str(round((float(y) + 0.5 * float(h)) * img_size[1]))
+                    }
+            }
+            read_result["object"].append(middle_object)
+        return read_result
+
+    def trans(self, out="xml_lables"):
+        if not os.path.exists(self.root_dir + os.sep + out):
+            os.mkdir(self.root_dir + os.sep + out)
+        origin_images = os.listdir(self.root_dir + "/images/")
+        my_bar = tqdm(origin_images, desc=colorstr("Yolo2Xml trans:") + f"{self.root_dir}")
+        for name in my_bar:
+            img = cv.imread(self.root_dir + "/images/" + name)
+            h, w, c = img.shape
+            del img
+            xml_data = self.read_txt(self.root_dir, name, [w, h, c])
+            if xml_data:
+                self.produce_xml(xml_data,
+                                 out=self.root_dir + os.sep + out + os.sep + name.split(".")[0] + ".xml")
+            my_bar.set_postfix({colorstr("image"): name, "status": not isinstance(xml_data, bool)})
+            pass
+        pass
+
+    pass
+
+
 if __name__ == '__main__':
-    xml2yolo = Xml2Yolo()
-    xml2yolo.trans()
+    # xml2yolo = Xml2Yolo()
+    # xml2yolo.trans(5736)
+    # print(print_list)
+    yolo = Yolo2Xml("/home/industai/sda2/datatsets/smokefire_industai/")
+    yolo.trans()
+
