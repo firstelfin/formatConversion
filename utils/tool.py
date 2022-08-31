@@ -4,6 +4,9 @@
 # @Author  : firstelfin
 # @File    : tool.py
 
+import os
+from sklearn.model_selection import train_test_split
+
 
 def colorstr(*x):
     # Colors a string https://en.wikipedia.org/wiki/ANSI_escape_code, i.e.  colorstr('blue', 'hello world')
@@ -29,3 +32,37 @@ def colorstr(*x):
         'bold': '\033[1m',
         'underline': '\033[4m'}
     return ''.join(colors[x] for x in args) + f'{string}' + colors['end']
+
+
+def add_prefix(split_data, root_dir):
+    return [root_dir + "/images/" + sd + "\n" for sd in split_data]
+
+
+def save_txt(root_dir, split_data, mode="train", year="2017"):
+    with open(root_dir + f"{mode}{year}.txt", "w+", encoding="utf-8") as f:
+        f.writelines(split_data)
+        f.close()
+    pass
+
+
+def split_datasets(path_root, split_ratio, year):
+    """
+    切分数据集，生成train.txt、valid.txt、test.txt
+    Args:
+        path_root: 数据集的根目录
+        split_ratio: 切分比例
+        year: 年份
+    Returns: 切分后的数据集分布
+    """
+    all_images_paths = os.listdir(path_root + "/images/")
+    train, valid_test = train_test_split(all_images_paths, train_size=split_ratio[0], random_state=2022)
+    valid, test = train_test_split(valid_test,
+                                   test_size=split_ratio[-1] / sum(split_ratio[1:]), random_state=2022)
+    train = add_prefix(train, path_root)
+    save_txt(path_root, train, year=year)
+    valid = add_prefix(valid, path_root)
+    save_txt(path_root, valid, "valid", year=year)
+    test = add_prefix(test, path_root)
+    save_txt(path_root, test, "test", year=year)
+    return train, valid, test
+
