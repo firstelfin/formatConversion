@@ -5,6 +5,7 @@
 # @File    : tool.py
 
 import os
+from pathlib import Path
 from sklearn.model_selection import train_test_split
 
 
@@ -66,3 +67,28 @@ def split_datasets(path_root, split_ratio, year):
     save_txt(path_root, test, "test", year=year)
     return train, valid, test
 
+
+def rename_signal_file(root_path, new_name):
+    root_path.rename(new_name)
+    pass
+
+
+def rename_files(root_dir, out_prefix="smokefire_industai", out_suffix=".jpg", out_index=0):
+    root_path = Path(root_dir)
+    if root_path.is_dir():
+        for file in root_path.iterdir():
+            rename_signal_file(file, "/" + root_path.absolute().__str__() + os.sep
+                               + f"{out_prefix}{out_index:06d}{out_suffix}")
+            out_index += 1
+            pass
+        pass
+    elif root_path.is_file():
+        rename_signal_file(root_path, "/" + root_path.parent.absolute().__str__() + os.sep
+                           + f"{out_prefix}{out_index:06d}{out_suffix}")
+        out_index += 1
+        pass
+    return out_index
+
+
+if __name__ == '__main__':
+    rename_files("/home/industai/sda2/datatsets/charging_images", out_index=21342)
