@@ -23,6 +23,7 @@ class Video2Img(object):
         >>> vi = Video2Img(
         >>>     root_dir="/home/industai/sda2/datatsets/charging_station/charging_station",
         >>>     out_dir="/home/industai/sda2/datatsets/charging_station/charging_images"
+        >>> )
         >>> vi.set_sampler(3)
         >>> not_use_index = vi.trans(
         >>>     out_prefix="smokefire_industai",
@@ -100,7 +101,7 @@ class Video2Img(object):
         return cls.sampler[0]
 
     @classmethod
-    def read_video_save_img(cls, name, out, out_prefix="smokefire_industai", out_index=0):
+    def read_video_save_img(cls, name, out, out_prefix="smokefire_industai", out_index=0, sample_num=0):
         """
         读取视频name, 根据cls.get_sampler的采样策略进行视频图像采样, 采样得到的图片保存到out,
             文件名前缀是out_prefix,编号是从out_index开始.
@@ -109,12 +110,16 @@ class Video2Img(object):
             out: 输出图片文件夹
             out_prefix: 输出文件前缀
             out_index: 输出文件的起始编号
+            sample_num: 从每个视频中采样的数量
         Returns: 输出文件未使用编号的下界
         """
         cap = cv.VideoCapture(name)
         # 获取视频属性
         fps = int(cap.get(cv.CAP_PROP_FPS))  # 帧率
         video_status = cap.isOpened()
+        if sample_num:
+            frame_total = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
+            cls.set_sampler(max(int(frame_total / fps / sample_num), 0))
         fps_index = 0
         sampler_code = cls.get_sampler(fps, fps_index)  # 控制你的采样策略
         while video_status:
@@ -129,20 +134,23 @@ class Video2Img(object):
                 pass
             fps_index += 1
         cap.release()  # 释放视频
-        return out_index + 1
+        return out_index
 
-    def trans(self, out_prefix="", out_index=0):
+    def trans(self, out_prefix="", out_index=0, sample_num=0):
         """
         对所有视频、文件夹下的视频进行视频截图
         Args:
             out_prefix: 输出图片文件的前缀
             out_index: 输出图片的起始编号
+            sample_num: 从每个视频中采样的数量
         Returns: 输出文件未使用编号的下界
         """
         my_bar = tqdm(self.files, desc=colorstr("bright_yellow", "视频截图"))
         for file_name in my_bar:
             out_index = self.read_video_save_img(file_name, self.out_dir,
-                                                 out_prefix=out_prefix, out_index=out_index)
+                                                 out_prefix=out_prefix,
+                                                 out_index=out_index,
+                                                 sample_num=sample_num)
             my_bar.set_postfix({colorstr("bright_blue", "Name"): file_name,
                                 colorstr("bright_blue", "Index"): out_index})
         return out_index
@@ -151,4 +159,15 @@ class Video2Img(object):
 
 
 if __name__ == '__main__':
+    vi = Video2Img(
+        root_dir="/home/industai/sda2/datatsets/smokefire_industai/imagesFromVedio/smokefire_vedio",
+        out_dir="/home/industai/sda2/datatsets/smokefire_industai/imagesFromVedio/images/",
+    )
+    vi.set_sampler(3)
+    not_use_index = vi.trans(
+        out_prefix="smokefire_industai",
+        out_index=0,
+        sample_num=6
+    )
+    print(not_use_index)
     pass

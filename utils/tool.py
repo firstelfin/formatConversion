@@ -5,7 +5,9 @@
 # @File    : tool.py
 
 import os
-from pathlib import Path
+import shutil
+from tqdm import tqdm
+from pathlib import Path, PosixPath
 from sklearn.model_selection import train_test_split
 
 
@@ -129,7 +131,7 @@ def write_yolov5_txt(root_dir, prefix="/home/industai/sda2/datatsets/charging_st
         out: 输出路径
 
     Examples
-    -------
+    ------
         >>> write_yolov5_txt(
         >>>     root_dir="/home/industai/sda2/datatsets/charging_station/chargingFP/",
         >>>     prefix="/home/industai/sda2/datatsets/smokefire_industai/images/"
@@ -147,15 +149,83 @@ def write_yolov5_txt(root_dir, prefix="/home/industai/sda2/datatsets/charging_st
     pass
 
 
+class OptionByLabelName(object):
+    """通过标注文件名对图像进行操作
+    适用于根据标注文件删除、保存源图片
+
+    Examples
+    ------
+        >>> OptionByLabelName.options_by_label_name(
+        >>>     labels_dir="/home/industai/project/yolov5/runs/detect/yolov5m_onnx_chargingStation/labels",
+        >>>     option="delete_op",
+        >>>     op_dir="/home/industai/project/yolov5/runs/detect/yolov5m_onnx_chargingStation"
+        >>> )
+        >>> OptionByLabelName.options_by_label_name(
+        >>>     labels_dir="/home/industai/project/yolov5/runs/detect/yolov5m_pt_chargingStation/labels",
+        >>>     option="save_op",
+        >>>     op_dir="/home/industai/project/yolov5/runs/detect/yolov5m_pt_chargingStation/images",
+        >>>     save_origin="/home/industai/project/yolov5/runs/detect/yolov5m_pt_chargingStation"
+        >>> )
+    """
+    def __init__(self):
+        pass
+
+    @classmethod
+    def delete_op(cls, label_path: PosixPath, object_dir="", suffix=".jpg", origin=""):
+        delete_name = label_path.stem + suffix
+        delete_path = Path(object_dir + os.sep + delete_name)
+        delete_path.unlink()
+
+    @classmethod
+    def save_op(cls, label_path: PosixPath, object_dir="", suffix=".jpg", origin=""):
+        save_path = Path(object_dir)
+        shutil.copy(origin + os.sep + label_path.stem + suffix, save_path)
+
+    @classmethod
+    def options_by_label_name(cls, labels_dir, option, op_dir, suffix=".jpg", save_origin=""):
+        """
+        Args:
+            ------
+            labels_dir: 标注文件的根目录
+            option: 按照标注文件名进行什么操作
+            op_dir: 进行操作的文件夹路径
+            suffix: 操作图片的后缀
+            save_origin: 保存图片的路径
+
+        Returns:
+            None
+        """
+        label_names = Path(labels_dir).iterdir()
+        my_bar = tqdm(label_names)
+        op = getattr(cls, option)
+        if option == "save_op":
+            out_path = Path(op_dir)
+            if not out_path.exists():
+                out_path.mkdir()
+        for label_name in my_bar:
+            op(label_name, op_dir, suffix=suffix, origin=save_origin)
+        pass
+
+
 if __name__ == '__main__':
-    # rename_files("/home/industai/sda2/datatsets/charging_station/chargingFP/", out_index=23143)
+    # rename_files("/home/industai/sda2/datatsets/smokefire_industai/misreport/", out_index=23143)
+
     # write_yolov5_txt(
-    #     root_dir="/home/industai/sda2/datatsets/charging_station/chargingFP/",
-    #     prefix="/home/industai/sda2/datatsets/smokefire_industai/images/"
+    #     root_dir="/home/industai/sda2/datatsets/smokefire_industai/misreport/",
+    #     prefix="/home/industai/sda2/datatsets/smokefire_industai/misreport/",
+    #     out="/home/industai/sda2/datatsets/smokefire_industai/misreport.txt"
     # )
-    split_datasets(
-        path_root="",
-        split_ratio=[0.8, 0.1, 0.1],
-        year=2022
-    )
+
+    # split_datasets(
+    #     path_root="",
+    #     split_ratio=[0.8, 0.1, 0.1],
+    #     year=2022
+    # )
+
+    # OptionByLabelName.options_by_label_name(
+    #     labels_dir="/home/industai/project/yolov5/runs/detect/yolov5m_pt_chargingStation/labels",
+    #     option="save_op",
+    #     op_dir="/home/industai/project/yolov5/runs/detect/yolov5m_pt_chargingStation/images",
+    #     save_origin="/home/industai/project/yolov5/runs/detect/yolov5m_pt_chargingStation"
+    # )
     pass

@@ -8,6 +8,7 @@ import os
 import random
 import shutil
 import json
+import munch
 from random import randint
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
@@ -27,6 +28,9 @@ labels_name = {
     "黑烟": "0",
     "火焰": "1",
     "黄焰": "1",
+    "烟": "0",
+    "火": "1",
+    "烟雾": "0"
 }
 
 valid_list = ["黄焰", "黄烟"]
@@ -48,10 +52,23 @@ def get_opt():
 class Xml2Yolo(object):
     """
     PascalVOC标注数据转为AOC数据格式
+
+    Examples
+        >>> xml2yolo = Xml2Yolo(
+        >>>     origin_dir="/home/industai/sda2/datatsets/smokefire_industai/smokefire_industaiv2/",
+        >>>     new_dir="/home/industai/sda2/datatsets/smokefire_industai/middlev2/", delete=False, sampler=0
+        >>> )
+        >>> xml2yolo.trans(0)
     """
 
-    def __init__(self):
-        self.opt = get_opt()
+    def __init__(self, origin_dir="", new_dir="", delete=False, sampler=0):
+        self.opt = {
+            "origin_dir": origin_dir,
+            "new_dir": new_dir,
+            "delete": delete,
+            "sampler": sampler
+        }
+        self.opt = munch.munchify(self.opt)
 
     @classmethod
     def read_xml(cls, name):
@@ -91,7 +108,7 @@ class Xml2Yolo(object):
         Returns: 新的文件名
         """
         suffix = "jpg" if img else "txt"
-        return f"smokefire_industai{index: 06d}.{suffix}"
+        return f"smokefire_industai{index:06d}.{suffix}"
 
     @classmethod
     def produce_txt(cls, data):
@@ -178,6 +195,10 @@ class Yolo2Xml(object):
         |- images
         |- labels
         |- classes.txt(可存放在labels里面)
+
+    Examples
+        >>> yolo = Yolo2Xml("/home/industai/sda2/datatsets/charging_station/charging/")
+        >>> yolo.trans()
     """
     class_names = {
         "0": "烟",
@@ -324,9 +345,14 @@ class Yolo2Xml(object):
 
 
 if __name__ == '__main__':
-    # xml2yolo = Xml2Yolo()
-    # xml2yolo.trans(5736)
-    # print(print_list)
-    yolo = Yolo2Xml("/home/industai/sda2/datatsets/smokefire_industai/")
-    yolo.trans()
+    xml2yolo = Xml2Yolo(
+        origin_dir="/home/industai/sda2/datatsets/smokefire_industai/smokefire_industaiv2/",
+        new_dir="/home/industai/sda2/datatsets/smokefire_industai/smokefire_industaiv2/middleV2/",
+        delete=False, sampler=0
+    )
+    xml2yolo.trans(0)
+    print(print_list)
+    # yolo = Yolo2Xml("/home/industai/sda2/datatsets/charging_station/charging/")
+    # yolo.trans()
+    pass
 
