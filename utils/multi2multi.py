@@ -16,6 +16,7 @@ import argparse
 from bs4 import BeautifulSoup
 import cv2 as cv
 from xml.dom import minidom
+from pathlib import Path
 
 from tool import colorstr
 
@@ -30,7 +31,8 @@ labels_name = {
     "黄焰": "1",
     "烟": "0",
     "火": "1",
-    "烟雾": "0"
+    "烟雾": "0",
+    "OilDetect": "0"
 }
 
 valid_list = ["黄焰", "黄烟"]
@@ -108,7 +110,7 @@ class Xml2Yolo(object):
         Returns: 新的文件名
         """
         suffix = "jpg" if img else "txt"
-        return f"smokefire_industai{index:06d}.{suffix}"
+        return f"oildetect{index:06d}.{suffix}"
 
     @classmethod
     def produce_txt(cls, data):
@@ -159,7 +161,7 @@ class Xml2Yolo(object):
             origin_labels = self.sampler(origin_labels, self.opt.sampler)
 
         for i, img in enumerate(origin_labels):
-            old_name = img.split(".")[0]
+            old_name, old_suffix = img.split(".")
             new_label_name = self.rename(i + start, False)
             # old_label
             old_label = old_name + ".xml"
@@ -178,7 +180,11 @@ class Xml2Yolo(object):
 
             if change_datasets:
                 # copy 图片到指定文件夹
-                shutil.copy(origin_dir + f"/images/{old_name}.jpg",
+                if Path(origin_dir + f"images/{old_name}.jpg").exists():
+                    img_suffix = "jpg"
+                else:
+                    img_suffix = "JPG"
+                shutil.copy(origin_dir + f"/images/{old_name}.{img_suffix}",
                             new_dir + f"/images/{self.rename(i + start)}")
                 self.save_yolo_txt(new_dir + "/labels/" + new_label_name, new_label_txt)
             else:
@@ -346,11 +352,11 @@ class Yolo2Xml(object):
 
 if __name__ == '__main__':
     xml2yolo = Xml2Yolo(
-        origin_dir="/home/industai/sda2/datatsets/smokefire_industai/smokefire_industaiv2/",
-        new_dir="/home/industai/sda2/datatsets/smokefire_industai/smokefire_industaiv2/middleV2/",
+        origin_dir="/home/industai/sda2/datasets/smokefire_industai/20220817smoke/",
+        new_dir="/home/industai/sda2/datasets/smokefire_industai/20220817smoke/yolo_text/",
         delete=False, sampler=0
     )
-    xml2yolo.trans(0)
+    xml2yolo.trans(30000)
     print(print_list)
     # yolo = Yolo2Xml("/home/industai/sda2/datatsets/charging_station/charging/")
     # yolo.trans()

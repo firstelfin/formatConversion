@@ -208,12 +208,19 @@ class OptionByLabelName(object):
 
 
 if __name__ == '__main__':
-    # rename_files("/home/industai/sda2/datatsets/smokefire_industai/misreport/", out_index=23143)
+    # rename_files("/home/industai/sda2/datatsets/smokefire_industai/smokefire_add/train20220916",
+    #              out_prefix="smokefire_industai",
+    #              out_index=25000)
 
     # write_yolov5_txt(
-    #     root_dir="/home/industai/sda2/datatsets/smokefire_industai/misreport/",
-    #     prefix="/home/industai/sda2/datatsets/smokefire_industai/misreport/",
-    #     out="/home/industai/sda2/datatsets/smokefire_industai/misreport.txt"
+    #     root_dir="/home/industai/sda2/datasets/oildetect/train/yolo_labels/images",
+    #     prefix="/home/elfin/oildetect/train/yolo_labels/images",
+    #     out="/home/industai/sda2/datasets/oildetect/train/yolo_labels/train.txt"
+    # )
+    # write_yolov5_txt(
+    #     root_dir="/home/industai/sda2/datasets/oildetect/test/images",
+    #     prefix="/home/elfin/oildetect/test/images",
+    #     out="/home/industai/sda2/datasets/oildetect/train/yolo_labels/test.txt"
     # )
 
     # split_datasets(
@@ -222,10 +229,10 @@ if __name__ == '__main__':
     #     year=2022
     # )
 
-    # OptionByLabelName.options_by_label_name(
-    #     labels_dir="/home/industai/project/yolov5/runs/detect/yolov5m_pt_chargingStation/labels",
-    #     option="save_op",
-    #     op_dir="/home/industai/project/yolov5/runs/detect/yolov5m_pt_chargingStation/images",
-    #     save_origin="/home/industai/project/yolov5/runs/detect/yolov5m_pt_chargingStation"
-    # )
+    OptionByLabelName.options_by_label_name(
+        labels_dir="/home/industai/project/yolov5/runs/detect/exp8/labels",
+        option="save_op",
+        op_dir="/home/industai/project/yolov5/runs/detect/exp8/images",
+        save_origin="/home/industai/project/yolov5/runs/detect/exp8/"
+    )
     pass

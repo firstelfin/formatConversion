@@ -19,17 +19,17 @@ class Video2Img(object):
         - 多个源文件路径
         - 不同的视频文件
         - 采样频率多样化
-    Examples
-        >>> vi = Video2Img(
-        >>>     root_dir="/home/industai/sda2/datatsets/charging_station/charging_station",
-        >>>     out_dir="/home/industai/sda2/datatsets/charging_station/charging_images"
-        >>> )
-        >>> vi.set_sampler(3)
-        >>> not_use_index = vi.trans(
-        >>>     out_prefix="smokefire_industai",
-        >>>     out_index=0
-        >>>     )
-        >>> print(not_use_index)
+    # Examples
+    #     >>> vi = Video2Img(
+    #     >>>     root_dir="/home/industai/sda2/datatsets/charging_station/charging_station",
+    #     >>>     out_dir="/home/industai/sda2/datatsets/charging_station/charging_images"
+    #     >>> )
+    #     >>> vi.set_sampler(3)
+    #     >>> not_use_index = vi.trans(
+    #     >>>     out_prefix="smokefire_industai",
+    #     >>>     out_index=0
+    #     >>>     )
+    #     >>> print(not_use_index)
     )
     """
 
@@ -80,7 +80,7 @@ class Video2Img(object):
         self.suffixes += suffixes
 
     @classmethod
-    def set_sampler(cls, frequency=1):
+    def set_sampler(cls, frequency=1.):
         """
         改变采样策略
         Args:
@@ -119,7 +119,8 @@ class Video2Img(object):
         video_status = cap.isOpened()
         if sample_num:
             frame_total = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
-            cls.set_sampler(max(int(frame_total / fps / sample_num), 0))
+            sample_code = max(frame_total / sample_num / fps, 1)
+            cls.set_sampler(sample_code)
         fps_index = 0
         sampler_code = cls.get_sampler(fps, fps_index)  # 控制你的采样策略
         while video_status:
@@ -160,14 +161,14 @@ class Video2Img(object):
 
 if __name__ == '__main__':
     vi = Video2Img(
-        root_dir="/home/industai/sda2/datatsets/smokefire_industai/imagesFromVedio/smokefire_vedio",
-        out_dir="/home/industai/sda2/datatsets/smokefire_industai/imagesFromVedio/images/",
+        root_dir="/home/industai/sda2/datatsets/smokefire_industai/smokefire_test/SP",
+        out_dir="/home/industai/sda2/datatsets/smokefire_industai/smokefire_test/SP/images/",
     )
-    vi.set_sampler(3)
+    vi.set_sampler(2)
     not_use_index = vi.trans(
-        out_prefix="smokefire_industai",
-        out_index=0,
-        sample_num=6
+        out_prefix="smokefire_charging",
+        out_index=30001,
+        sample_num=0
     )
     print(not_use_index)
     pass
