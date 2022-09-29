@@ -64,6 +64,8 @@ class Xml2Yolo(object):
     """
 
     def __init__(self, origin_dir="", new_dir="", delete=False, sampler=0):
+        if not new_dir:
+            new_dir = origin_dir
         self.opt = {
             "origin_dir": origin_dir,
             "new_dir": new_dir,
@@ -101,16 +103,17 @@ class Xml2Yolo(object):
         return res
 
     @classmethod
-    def rename(cls, index, img=True):
+    def rename(cls, index, img=True, prefix="smokefire_charging"):
         """
         对图片和标注文件重命名.
         Args:
+            prefix: 输出文件名的前缀
             index: 当前处理对象在数据集中的索引编号
             img: 对象是否为图片
         Returns: 新的文件名
         """
         suffix = "jpg" if img else "txt"
-        return f"oildetect{index:06d}.{suffix}"
+        return f"{prefix}{index:06d}.{suffix}"
 
     @classmethod
     def produce_txt(cls, data):
@@ -142,17 +145,43 @@ class Xml2Yolo(object):
                 res.append(d)
         return res
 
-    def trans(self, start=0):
+    def trans(self, start=0, prefix="smokefire_industai"):
+        """
+        VOC标注转yolo的txt标注格式
+        ------
+        Args:
+            start: 索引起始值
+            prefix: 图片、标注文件前缀
+
+        ------
+        Examples:
+            # 直接在源数据文件夹下转换数据，并生成新的图片、标注文件夹在源文件夹下
+            >>> xml2yolo = Xml2Yolo(
+            >>>     origin_dir="/home/industai/sda2/datasets/smokefire_industai/smokefire_add/20220927YH/",
+            >>>     new_dir="",
+            >>>     delete=False, sampler=0
+            >>> )
+            >>> xml2yolo.trans(850, "smokefire_charging")
+            # 在源文件夹下转换数据，并在此文件夹下生成新的图片、标注文件夹，删除源图片
+            >>> xml2yolo = Xml2Yolo(
+            >>>     origin_dir="/home/industai/sda2/datasets/smokefire_industai/smokefire_add/20220927YH/",
+            >>>     new_dir="",
+            >>>     delete=True, sampler=0
+            >>> )
+            >>> xml2yolo.trans(850, "smokefire_charging")
+        Returns: next index
+
+        """
         origin_dir = self.opt.origin_dir
         new_dir = self.opt.new_dir
         # origin_images = os.listdir(origin_dir + "images/")
-        origin_labels = os.listdir(origin_dir + "/labels/")
+        origin_labels = os.listdir(origin_dir + "/xml/")
         if new_dir == "":
             change_datasets = False
         else:
             change_datasets = True
-            if not os.path.exists(new_dir + "/images"):
-                os.mkdir(new_dir + "/images")
+            if not os.path.exists(new_dir + "/yolo_images"):
+                os.mkdir(new_dir + "/yolo_images")
             if not os.path.exists(new_dir + "/labels"):
                 os.mkdir(new_dir + "/labels")
 
@@ -162,10 +191,10 @@ class Xml2Yolo(object):
 
         for i, img in enumerate(origin_labels):
             old_name, old_suffix = img.split(".")
-            new_label_name = self.rename(i + start, False)
+            new_label_name = self.rename(i + start, False, prefix)
             # old_label
             old_label = old_name + ".xml"
-            label = self.read_xml(origin_dir + "/labels/" + old_label)
+            label = self.read_xml(origin_dir + "/xml/" + old_label)
             # for ntl in label["object"]:
             #     if ntl[0] in valid_list:
             #         print_list.append(old_name)
@@ -174,23 +203,23 @@ class Xml2Yolo(object):
             # 是否删除旧图像、旧标注，当图片无标注信息时
             if not new_label_txt and self.opt.delete:
                 os.remove(origin_dir + f"images/{old_name}.jpg")
-                if os.path.exists(origin_dir + "labels/" + img):
-                    os.remove(origin_dir + "labels/" + img)
+                if os.path.exists(origin_dir + "xml/" + img):
+                    os.remove(origin_dir + "xml/" + img)
                 continue
 
-            if change_datasets:
+            if change_datasets and new_label_txt:
                 # copy 图片到指定文件夹
-                if Path(origin_dir + f"images/{old_name}.jpg").exists():
+                if Path(origin_dir + f"/images/{old_name}.jpg").exists():
                     img_suffix = "jpg"
                 else:
                     img_suffix = "JPG"
                 shutil.copy(origin_dir + f"/images/{old_name}.{img_suffix}",
-                            new_dir + f"/images/{self.rename(i + start)}")
+                            new_dir + f"/yolo_images/{self.rename(i + start, prefix=prefix)}")
                 self.save_yolo_txt(new_dir + "/labels/" + new_label_name, new_label_txt)
-            else:
+            elif new_label_txt:
                 self.save_yolo_txt(origin_dir + "/labels/" + new_label_name, new_label_txt)
-        pass
-    pass
+        # todo: 保存转换映射表
+        return start + len(origin_labels)
 
 
 class Yolo2Xml(object):
@@ -330,7 +359,7 @@ class Yolo2Xml(object):
             read_result["object"].append(middle_object)
         return read_result
 
-    def trans(self, out="xml_lables"):
+    def trans(self, out="xml"):
         if not os.path.exists(self.root_dir + os.sep + out):
             os.mkdir(self.root_dir + os.sep + out)
         origin_images = os.listdir(self.root_dir + "/images/")
@@ -352,13 +381,13 @@ class Yolo2Xml(object):
 
 if __name__ == '__main__':
     xml2yolo = Xml2Yolo(
-        origin_dir="/home/industai/sda2/datasets/smokefire_industai/20220817smoke/",
-        new_dir="/home/industai/sda2/datasets/smokefire_industai/20220817smoke/yolo_text/",
+        origin_dir="/home/industai/sda2/datasets/smokefire_industai/smokefire_add/train20220928/",
+        new_dir="",
         delete=False, sampler=0
     )
-    xml2yolo.trans(30000)
+    xml2yolo.trans(0, "smokefire_charging")
     print(print_list)
-    # yolo = Yolo2Xml("/home/industai/sda2/datatsets/charging_station/charging/")
+    # yolo = Yolo2Xml("/home/industai/sda2/datasets/smokefire_industai/smokefire_add/train20220927/")
     # yolo.trans()
     pass
 

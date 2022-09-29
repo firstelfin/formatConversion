@@ -10,7 +10,7 @@ from pathlib import PurePath, Path
 import cv2 as cv
 from tqdm import tqdm
 
-from utils.tool import colorstr
+#from utils.tool import colorstr
 
 
 class Video2Img(object):
@@ -41,15 +41,16 @@ class Video2Img(object):
         # 文件验证、文件夹验证
         self.files = []
         self.dirs = []
-        print(colorstr('bright_green', "开始文件验证："))
+       # print(colorstr('bright_green', "开始文件验证："))
         for project_name in self.root_dir:
             if Path(project_name).is_file():
                 self.files.append(project_name)
             elif Path(project_name).is_dir():
                 self.dirs.append(project_name)
             else:
-                assert colorstr('bright_red', f"{project_name}不是合法的文件路径或文件夹")
-        print(colorstr('bright_green', "开始文件夹视频获取："))
+                assert "colorstr('bright_red', f'{project_name}不是合法的文件路径或文件夹')"
+
+        #print(colorstr('bright_green', "开始文件夹视频获取："))
         for video_dir in self.dirs:
             video_files = Path(video_dir).iterdir()
             # 验证文件是否为视频文件，后缀验证
@@ -146,14 +147,15 @@ class Video2Img(object):
             sample_num: 从每个视频中采样的数量
         Returns: 输出文件未使用编号的下界
         """
-        my_bar = tqdm(self.files, desc=colorstr("bright_yellow", "视频截图"))
+        my_bar = tqdm(self.files, desc='colorstr("bright_yellow", "视频截图")')
         for file_name in my_bar:
             out_index = self.read_video_save_img(file_name, self.out_dir,
                                                  out_prefix=out_prefix,
                                                  out_index=out_index,
                                                  sample_num=sample_num)
-            my_bar.set_postfix({colorstr("bright_blue", "Name"): file_name,
-                                colorstr("bright_blue", "Index"): out_index})
+            #y_bar.set_postfix({colorstr("bright_blue", "Name"): file_name,
+            #                    colorstr("bright_blue", "Index"): out_index})
+            my_bar.set_postfix({"Name": file_name, "Index": out_index})
         return out_index
 
     pass
@@ -161,13 +163,13 @@ class Video2Img(object):
 
 if __name__ == '__main__':
     vi = Video2Img(
-        root_dir="/home/industai/sda2/datatsets/smokefire_industai/smokefire_test/SP",
-        out_dir="/home/industai/sda2/datatsets/smokefire_industai/smokefire_test/SP/images/",
+        root_dir="/home/industai/sda2/datasets/smokefire_industai/smokefire_test/充电站测试数据源/test11.mp4",
+        out_dir="/home/industai/sda2/datasets/smokefire_industai/smokefire_test/images/",
     )
     vi.set_sampler(2)
     not_use_index = vi.trans(
         out_prefix="smokefire_charging",
-        out_index=30001,
+        out_index=2312,
         sample_num=0
     )
     print(not_use_index)
