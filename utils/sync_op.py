@@ -17,7 +17,6 @@ def sync_img_label_from_source(
     """
     从一个文件夹下同步复制(移动)图片与标注文本。支持任意对应的数组，唯一要求是文件名的stem是一样的。
 
-    ------
     Args:
         sample_ratio: 采样率，控制要复制多少数据对
         root_dir: 源数据根目录
@@ -29,8 +28,9 @@ def sync_img_label_from_source(
         label_suffix: 标注文件的后缀
         op: 要进行的同步操作['copy', 'move']
 
-    ------
+
     Examples:
+    ------
         >>> sync_img_label_from_source(
         >>>     sample_ratio=0.75,
         >>>     root_dir=Path("/home/industai/sda2/datasets/smokefire_industai/smokefire_datasets"),
